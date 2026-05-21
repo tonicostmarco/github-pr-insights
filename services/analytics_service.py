@@ -11,7 +11,6 @@ PASSWORD = os.getenv("ANALYTICS_PASSWORD")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
-
 def get_token(base_url, username, password):
     response = requests.post(
         f"{base_url}/auth/token",
@@ -20,9 +19,9 @@ def get_token(base_url, username, password):
     return response.json()["token"]
 
 
-def get_analytics(base_url, token, endpoint, from_date, to_date):
+def get_analytics(base_url, token, endpoint, date_from, date_to):
     headers = {"Authorization": f"Bearer {token}"}
-    params = {"from": from_date, "to": to_date}
+    params = {"from": date_from, "to": date_to}
     response = requests.get(f"{base_url}/analytics/{endpoint}", params=params, headers=headers)
     return response.json()
 
@@ -50,3 +49,12 @@ def analyze_data(summary, author_metrics, repository_metrics, api_key):
         stop=None
     )
     return completion.choices[0].message.content
+
+def init(date_from, date_to):
+
+    token = get_token(BASE_URL, USERNAME, PASSWORD)
+    summary = get_analytics(BASE_URL, token, "summary", date_from, date_to)
+    author_metrics = get_analytics(BASE_URL, token, "authormetrics", date_from, date_to)
+    repository_metrics = get_analytics(BASE_URL, token, "repositorymetrics", date_from, date_to)
+    analyze = analyze_data(summary, author_metrics, repository_metrics, GROQ_API_KEY)
+    return analyze

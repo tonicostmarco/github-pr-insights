@@ -3,6 +3,7 @@ import requests
 from groq import Groq
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 BASE_URL = os.getenv("ANALYTICS_BASE_URL")
@@ -50,11 +51,27 @@ def analyze_data(summary, author_metrics, repository_metrics, api_key):
     )
     return completion.choices[0].message.content
 
-def init(date_from, date_to):
+def validation(token_header, date_from, date_to):
+    headers = {"Authorization": f"Bearer {token_header}"}
+    params = {"from": date_from, "to": date_to}
+    response = requests.get(f"{BASE_URL}/analytics/summary", params=params, headers=headers)
+    if  response.status_code == 200:
+        return True
+    else:
+        return False
 
-    token = get_token(BASE_URL, USERNAME, PASSWORD)
-    summary = get_analytics(BASE_URL, token, "summary", date_from, date_to)
-    author_metrics = get_analytics(BASE_URL, token, "authormetrics", date_from, date_to)
-    repository_metrics = get_analytics(BASE_URL, token, "repositorymetrics", date_from, date_to)
-    analyze = analyze_data(summary, author_metrics, repository_metrics, GROQ_API_KEY)
-    return analyze
+def init(date_from, date_to, token_header):
+
+
+    if validation(token_header, date_from, date_to):
+        token = get_token(BASE_URL, USERNAME, PASSWORD)
+        summary = get_analytics(BASE_URL, token, "summary", date_from, date_to)
+        author_metrics = get_analytics(BASE_URL, token, "authormetrics", date_from, date_to)
+        repository_metrics = get_analytics(BASE_URL, token, "repositorymetrics", date_from, date_to)
+        return analyze_data(summary, author_metrics, repository_metrics, GROQ_API_KEY)
+    else:
+        return "Unauthorized"
+
+
+
+

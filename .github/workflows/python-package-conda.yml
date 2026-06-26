@@ -1,0 +1,48 @@
+name: Build -> push -> deploy (insights)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Smoke check (import app)
+        run: python -c "import main; print('app ok')"
+
+      - name: Docker Hub login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build the image
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/github-pr-insights:latest .
+
+      - name: Push the image to Docker Hub
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/github-pr-insights:latest
+
+      - name: SSH and refresh the stack on EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/app
+            docker compose pull
+            GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} docker compose up -d
+            docker image prune -f

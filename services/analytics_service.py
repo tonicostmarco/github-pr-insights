@@ -54,8 +54,8 @@ def analyze_data(summary, author_metrics, repository_metrics, api_key):
 def validation(token_header, date_from, date_to):
     headers = {"Authorization": f"Bearer {token_header}"}
     params = {"from": date_from, "to": date_to}
-    response = requests.get(f"{BASE_URL}/analytics/summary", params=params, headers=headers)
-    if  response.status_code == 200:
+
+    if  requests.get(f"{BASE_URL}/analytics/summary", params=params, headers=headers).status_code == 200:
         return True
     else:
         return False
@@ -68,6 +68,7 @@ def init(date_from, date_to, token_header):
         summary = get_analytics(BASE_URL, token, "summary", date_from, date_to)
         author_metrics = get_analytics(BASE_URL, token, "authormetrics", date_from, date_to)
         repository_metrics = get_analytics(BASE_URL, token, "repositorymetrics", date_from, date_to)
+        print(token_header)
         return analyze_data(summary, author_metrics, repository_metrics, GROQ_API_KEY)
     else:
         return "Unauthorized"
